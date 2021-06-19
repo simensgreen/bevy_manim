@@ -3,6 +3,12 @@ name = "bevy_manim"
 version = "0.1.0"
 authors = ["simens_green <simensgreen007@gmail.com>"]
 edition = "2018"
+license = "MIT"
+license-file = "LICENSE"
+repository = "https://github.com/simensgreen/bevy_manim"
+readme = "README.md"
+keywords = ["bevy", "drawing", "animation"]
+description = "bevy plugin for drawing and animation"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
