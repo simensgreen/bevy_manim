@@ -23,7 +23,6 @@ use crate::play::ScheduledAnimation;
 use crate::core::{PackedAnimation, AnimationKind};
 use crate::draw::Drawing;
 use std::time::Duration;
-use bevy::prelude::SpriteBundle;
 
 const VERTEX_SHADER: &str = r#"
 #version 450

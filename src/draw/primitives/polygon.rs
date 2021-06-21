@@ -3,7 +3,6 @@ use crate::draw::{Drawing, Tessellation};
 use lyon::algorithms::path::Path;
 use lyon::math::Point;
 use lyon::tessellation::{LineJoin, StrokeOptions, StrokeTessellator, VertexBuffers, BuffersBuilder, StrokeVertex, FillTessellator, FillOptions, FillVertex};
-use crate::prelude::LineCap;
 
 
 pub struct Polygon

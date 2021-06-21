@@ -1,8 +1,7 @@
 use crate::core::{Color, Indices};
 use crate::draw::{Drawing, Tessellation};
-use lyon::algorithms::path::Path;
 use lyon::math::Point;
-use lyon::tessellation::{LineJoin, LineCap, StrokeOptions, StrokeTessellator, VertexBuffers, BuffersBuilder, StrokeVertex, FillTessellator, FillOptions, FillVertex};
+use lyon::tessellation::{StrokeOptions, StrokeTessellator, VertexBuffers, BuffersBuilder, StrokeVertex, FillTessellator, FillOptions, FillVertex};
 
 pub struct Circle
 {
