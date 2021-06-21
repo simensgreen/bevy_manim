@@ -1,7 +1,7 @@
 use crate::core::PackedAnimation;
 use crate::draw::Tessellation;
 
-pub trait AnimationKind
+pub trait AnimationKind: Send + Sync + 'static + Clone
 {
     fn generate
     (

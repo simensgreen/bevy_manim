@@ -14,8 +14,6 @@ pub fn main() {
 
 fn setup(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    manim_pipeline: Res<ManimRenderPipelines>,
 )
 {
     commands.spawn_bundle(PerspectiveCameraBundle
@@ -33,16 +31,15 @@ fn setup(
         ];
     let line = primitives::Line
     { color: [0.95, 0.75, 0.0, 1.0], points: line_points, ..Default::default() } ;
-    animate_draw(
-        line,
-        emergence::FromPoint { func: funcs::double_smooth, ..Default::default() },
-        3.0,
-        Duration::from_secs_f32(3.0),
-        false,
-        &mut commands,
-        &mut meshes,
-        &manim_pipeline
-    );
+    commands.spawn()
+        .insert(line)
+        .insert(AnimationDescription
+        {
+            animation: emergence::FromPoint { func: funcs::double_smooth, ..Default::default()},
+            start: 3.0,
+            duration: Duration::from_secs_f32(3.0),
+            is_loop: false
+        });
 
 }
 

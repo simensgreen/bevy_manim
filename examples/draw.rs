@@ -13,8 +13,6 @@ pub fn main() {
 
 fn setup(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    manim_pipeline: Res<ManimRenderPipelines>,
 )
 {
     commands.spawn_bundle(PerspectiveCameraBundle
@@ -32,7 +30,7 @@ fn setup(
         ];
     let line = primitives::Line
     { color: [0.95, 0.75, 0.0, 1.0], points: line_points, ..Default::default() } ;
-    draw(line, &mut commands, &mut meshes, &manim_pipeline);
+    commands.spawn().insert(line);
 
 }
 

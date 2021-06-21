@@ -13,7 +13,5 @@ pub use crate::draw::primitives;
 pub use crate::play::ScheduledAnimation;
 
 pub use crate::bevy::ManimPlugin;
-pub use crate::bevy::ManimMesh;
 pub use crate::bevy::ManimRenderPipelines;
-pub use crate::bevy::draw;
-pub use crate::bevy::animate_draw;
+pub use crate::bevy::AnimationDescription;

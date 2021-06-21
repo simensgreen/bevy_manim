@@ -23,7 +23,7 @@ impl Default for Tessellation
     }
 }
 
-pub trait Drawing
+pub trait Drawing: Sync + Send + 'static
 {
     fn get_tessellation(&self) -> Tessellation;
     fn get_mesh(&self) -> Mesh

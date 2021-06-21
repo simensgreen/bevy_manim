@@ -7,12 +7,13 @@ use bevy::
         mesh::Mesh,
         entity::MeshBundle,
         pipeline::{RenderPipelines, PipelineDescriptor, RenderPipeline},
-        shader::{Shader, ShaderStages, ShaderStage}
+        shader::{Shader, ShaderStages, ShaderStage},
     },
     ecs::
     {
         entity::Entity,
-        system::{IntoSystem, Commands, ResMut, Query, Res}
+        system::{IntoSystem, Commands, ResMut, Query, Res},
+        query::{With, Added},
     },
     core::Time,
 };
@@ -54,12 +55,10 @@ void main() {
 }
 "#;
 
-pub struct ManimMesh
+pub struct ManimRenderPipelines
 {
-    mesh_handle: Handle<Mesh>
+    pub pipelines: RenderPipelines
 }
-
-pub struct ManimRenderPipelines(RenderPipelines);
 
 
 pub struct ManimPlugin;
@@ -67,6 +66,7 @@ impl Plugin for ManimPlugin
 {
     fn build(&self, app: &mut AppBuilder)
     {
+        app.add_plugin(registration::RegisterSystems);
         app.add_system(animation_processor.system());
 
         let world = app.world_mut();
@@ -81,22 +81,24 @@ impl Plugin for ManimPlugin
         let render_pipelines = RenderPipelines::from_pipelines(vec![RenderPipeline::new(
             pipeline_handle,
         )]);
-        world.insert_resource(ManimRenderPipelines(render_pipelines))
+        world.insert_resource(ManimRenderPipelines { pipelines: render_pipelines })
     }
 }
+
+pub struct ManimDrawing;
 
 fn animation_processor
 (
     mut commands: Commands,
+    mut animated: Query<(Entity, &Handle<Mesh>, &mut ScheduledAnimation), With<ManimDrawing>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut animated: Query<(Entity, &ManimMesh, &mut ScheduledAnimation)>,
     time: Res<Time>,
 )
 {
     let since_start = time.seconds_since_startup() as f32;
-    for (entity, drawing_mesh, mut scheduled_animation) in animated.iter_mut()
+    for (entity, mesh_handle, mut scheduled_animation) in animated.iter_mut()
     {
-        if let Some(mesh) = meshes.get_mut(drawing_mesh.mesh_handle.clone())
+        if let Some(mesh) = meshes.get_mut(mesh_handle.clone())
         {
             let progress = (since_start - scheduled_animation.start) / scheduled_animation.duration.as_secs_f32();
             if progress <= 0.0
@@ -129,57 +131,86 @@ fn animation_processor
 fn configure_mesh(mesh: &mut Mesh, animation: PackedAnimation, progress: f32)
 {
     let mut tmp = animation.lock().unwrap();
+
+    if tmp.get_progress() == progress { return }
+
     tmp.set_progress(progress);
     mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, tmp.get_vertices());
     mesh.set_attribute(Mesh::ATTRIBUTE_COLOR, tmp.get_colors());
     mesh.set_indices(Some(tmp.get_indices()));
 }
 
-pub fn draw<D: Drawing>
-(
-    drawing: D,
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    pipeline: &Res<ManimRenderPipelines>
-) -> Entity
+pub struct AnimationDescription<A: AnimationKind>
 {
-    let mesh = drawing.get_mesh();
-    let mesh_handle = meshes.add(mesh);
-    commands.spawn_bundle
-    (
-        MeshBundle
-        {
-            mesh: mesh_handle.clone(),
-            render_pipelines: pipeline.0.clone(),
-            ..Default::default()
-        }
-    ).insert(ManimMesh { mesh_handle } ).id()
+    pub animation: A,
+    pub start: f32,
+    pub duration: Duration,
+    pub is_loop: bool,
 }
 
-pub fn animate_draw<D: Drawing, A: AnimationKind>(
-    drawing: D,
-    animation: A,
-    start: f32,
-    duration: Duration,
-    is_loop: bool,
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    pipeline: &Res<ManimRenderPipelines>,
-) -> Entity
+pub(crate) fn register_drawing<T: Drawing>(mut commands: Commands, query: Query<(Entity, &T), Added<T>>, mut meshes: ResMut<Assets<Mesh>>, pipeline: Res<ManimRenderPipelines>)
 {
-    let mesh = drawing.get_mesh();
-    let mesh_handle = meshes.add(mesh);
-    let animation = drawing.animate(animation);
-    commands.spawn_bundle(MeshBundle
+    for (entity, drawing) in query.iter()
     {
-        mesh: mesh_handle.clone(),
-        render_pipelines: pipeline.0.clone(),
-        ..Default::default()
-    })
-        .insert(ManimMesh { mesh_handle })
-        .insert(ScheduledAnimation
+        let mesh = drawing.get_mesh();
+        let handle = meshes.add(mesh);
+        commands.entity(entity)
+            .insert(ManimDrawing)
+            .insert_bundle(MeshBundle
+            {
+                mesh: handle,
+                render_pipelines: pipeline.pipelines.clone(),
+                ..Default::default()
+            });
+    }
+}
+
+pub(crate) fn register_animation<D: Drawing, A: AnimationKind>(mut commands: Commands, query: Query<(Entity, &D, &AnimationDescription<A>), Added<AnimationDescription<A>>>)
+{
+    for (entity, drawing, animation) in query.iter()
+    {
+        commands.entity(entity)
+            .remove::<AnimationDescription<A>>()
+            .insert(ScheduledAnimation
+            {
+                is_loop: animation.is_loop,
+                start: animation.start,
+                duration: animation.duration,
+                animation: drawing.animate(animation.animation.clone())
+            });
+    }
+}
+
+
+mod registration
+{
+    use bevy::app::{Plugin, AppBuilder};
+    use bevy::ecs::system::IntoSystem;
+    use crate::bevy::register_animation;
+    use crate::bevy::register_drawing;
+    use crate::draw::primitives::*;
+    use crate::anim::emergence::*;
+
+    macro_rules! nested_register {
+        ($app:expr; ($($draw:ident),*) $anim:tt) => {
+            $(nested_register!(@register $app; $draw $anim);)*
+        };
+        (@register $app:expr; $draw:ident ($($anim:ident),*)) => {
+            $app.add_system(register_drawing::<$draw>.system());
+            $($app.add_system(register_animation::<$draw, $anim>.system());)*
+        };
+    }
+
+    pub(crate) struct RegisterSystems;
+    impl Plugin for RegisterSystems
+    {
+        fn build(&self, app: &mut AppBuilder)
         {
-            animation, is_loop, start, duration
-        })
-        .id()
+            nested_register!(
+            app;
+            (Line, Circle)
+            (Fade, FromPoint)
+            );
+        }
+    }
 }
