@@ -14,6 +14,7 @@ use bevy::
         entity::Entity,
         system::{IntoSystem, Commands, ResMut, Query, Res},
         query::{With, Added},
+        // schedule::ExclusiveSystemDescriptorCoercion,
     },
     core::Time,
 };
@@ -22,6 +23,7 @@ use crate::play::ScheduledAnimation;
 use crate::core::{PackedAnimation, AnimationKind};
 use crate::draw::Drawing;
 use std::time::Duration;
+use bevy::app::CoreStage;
 
 const VERTEX_SHADER: &str = r#"
 #version 450
@@ -103,11 +105,11 @@ fn animation_processor
             let progress = (since_start - scheduled_animation.start) / scheduled_animation.duration.as_secs_f32();
             if progress <= 0.0
             {
-                configure_mesh(mesh, scheduled_animation.animation.clone(), 0.0);
+                configure_mesh(mesh, &scheduled_animation.animation, 0.0);
             }
             else if progress > 0.0 && progress < 1.0
             {
-                configure_mesh(mesh, scheduled_animation.animation.clone(), progress);
+                configure_mesh(mesh, &scheduled_animation.animation, progress);
             }
             else if progress >= 1.0
             {
@@ -128,11 +130,12 @@ fn animation_processor
     }
 }
 
-fn configure_mesh(mesh: &mut Mesh, animation: PackedAnimation, progress: f32)
+fn configure_mesh(mesh: &mut Mesh, animation: &PackedAnimation, progress: f32)
 {
     let mut tmp = animation.lock().unwrap();
 
-    if tmp.get_progress() == progress { return }
+    // this line causes lag
+    // if tmp.get_progress() == progress { return }
 
     tmp.set_progress(progress);
     mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, tmp.get_vertices());
@@ -148,7 +151,13 @@ pub struct AnimationDescription<A: AnimationKind>
     pub is_loop: bool,
 }
 
-pub(crate) fn register_drawing<T: Drawing>(mut commands: Commands, query: Query<(Entity, &T), Added<T>>, mut meshes: ResMut<Assets<Mesh>>, pipeline: Res<ManimRenderPipelines>)
+pub(crate) fn register_drawing<T: Drawing>
+(
+    mut commands: Commands,
+    query: Query<(Entity, &T), Added<T>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    pipeline: Res<ManimRenderPipelines>
+)
 {
     for (entity, drawing) in query.iter()
     {
@@ -165,7 +174,11 @@ pub(crate) fn register_drawing<T: Drawing>(mut commands: Commands, query: Query<
     }
 }
 
-pub(crate) fn register_animation<D: Drawing, A: AnimationKind>(mut commands: Commands, query: Query<(Entity, &D, &AnimationDescription<A>), Added<AnimationDescription<A>>>)
+pub(crate) fn register_animation<D: Drawing, A: AnimationKind>
+(
+    mut commands: Commands,
+    query: Query<(Entity, &D, &AnimationDescription<A>), Added<AnimationDescription<A>>>
+)
 {
     for (entity, drawing, animation) in query.iter()
     {
@@ -184,7 +197,7 @@ pub(crate) fn register_animation<D: Drawing, A: AnimationKind>(mut commands: Com
 
 mod registration
 {
-    use bevy::app::{Plugin, AppBuilder};
+    use bevy::app::{Plugin, AppBuilder, CoreStage};
     use bevy::ecs::system::IntoSystem;
     use crate::bevy::register_animation;
     use crate::bevy::register_drawing;
@@ -196,8 +209,8 @@ mod registration
             $(nested_register!(@register $app; $draw $anim);)*
         };
         (@register $app:expr; $draw:ident ($($anim:ident),*)) => {
-            $app.add_system(register_drawing::<$draw>.system());
-            $($app.add_system(register_animation::<$draw, $anim>.system());)*
+            $app.add_system_to_stage(CoreStage::PostUpdate, register_drawing::<$draw>.system());
+            $($app.add_system_to_stage(CoreStage::Last, register_animation::<$draw, $anim>.system());)*
         };
     }
 
