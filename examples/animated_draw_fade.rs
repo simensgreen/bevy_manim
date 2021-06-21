@@ -41,5 +41,3 @@ fn setup(
             is_loop: false
         });
 }
-
-

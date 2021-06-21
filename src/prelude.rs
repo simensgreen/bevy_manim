@@ -15,3 +15,6 @@ pub use crate::play::ScheduledAnimation;
 pub use crate::bevy::ManimPlugin;
 pub use crate::bevy::ManimRenderPipelines;
 pub use crate::bevy::AnimationDescription;
+
+pub use lyon::tessellation::LineJoin;
+pub use lyon::tessellation::LineCap;

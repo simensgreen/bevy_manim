@@ -1,5 +1,5 @@
 #### draw
-![draw](assets/draw.png)
+![draw](assets/draw.jpg)
 #### animated_draw_fade
 ![animated_draw_fade](assets/draw_fade.gif)
 #### animated_draw_from_point

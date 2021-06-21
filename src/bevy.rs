@@ -23,7 +23,7 @@ use crate::play::ScheduledAnimation;
 use crate::core::{PackedAnimation, AnimationKind};
 use crate::draw::Drawing;
 use std::time::Duration;
-use bevy::app::CoreStage;
+use bevy::prelude::SpriteBundle;
 
 const VERTEX_SHADER: &str = r#"
 #version 450
@@ -221,7 +221,7 @@ mod registration
         {
             nested_register!(
             app;
-            (Line, Circle)
+            (Line, Point, Rect, Polygon, Circle)
             (Fade, FromPoint)
             );
         }

@@ -20,7 +20,7 @@ fn setup(
         transform: Transform::from_xyz(0.0, 0.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
     });
-    let line_points =
+    let points =
         vec!
         [
             [0.08, 0.25],
@@ -28,10 +28,13 @@ fn setup(
             [0.08, 0.0],
             [-0.08, -0.25],
         ];
-    let line = primitives::Line
-    { color: [0.95, 0.75, 0.0, 1.0], points: line_points, ..Default::default() } ;
-    commands.spawn().insert(line);
-
+    commands.spawn().insert(primitives::Polygon
+    {
+        points,
+        color: [0.95, 0.75, 0.0, 1.0],
+        outline: [1.0, 1.0, 0.2, 1.0],
+        ..Default::default()
+    });
 }
 
 

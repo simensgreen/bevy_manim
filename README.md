@@ -11,13 +11,7 @@ dramatically, but the basic concept will remain the same.
 It is also based on lyon, an alternative may be useful
 ## Current goals
    
-   - More drawing primitives such as the:
-        * Rectangle
-        * Oval
-        * Curve
-        * Polygon
-        * 3D shapes
-        * ...
+   - More drawing primitives:
    - More animations
    - Documentation
    - Get rid of the terrible `Arc<Mutex<...>>` aka `PackedAnimation`
